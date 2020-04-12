@@ -22,7 +22,7 @@ git_deleted_symbol=''
 git_modified_symbol='•'
 git_renamed_symbol=''
 git_untracked_symbol='*'
-git_clean_symbol=''
+git_clean_symbol=''
 git_push_symbol=''
 git_pull_symbol=''
 
@@ -133,9 +133,24 @@ preexec() {
 
 precmd() {
     if [ $timer ]; then
-        timer_show=$(($SECONDS - $timer))
-        timer_show=$(printf '%.*f\n' 3 $timer_show)
-        exit_code_and_command_time_bubble_error="%(?,%{$fg[blue]%}$bubble_left%{$fg[blue]%}[%?] : $timer_show $bubble_right,%{$fg[red]%}$bubble_left%{$fg[red]%}[%?] : $timer_show $bubble_right)"
+        local timer_show=$(($SECONDS - $timer))
+        local copy_time=$timer_show
+        local seconds=$(($timer_show % 60))
+        local minutes=$(($timer_show / 60 % 60))
+        local hours=$(($timer_show / 60 / 60 % 24))
+        local days=$(($timer_show / 60 / 60 / 24))
+
+        timer_show=""
+        (( $days > 0 )) && timer_show="${days}d"
+        (( $hours > 0 )) && timer_show=" ${timer_show} ${hours}h"
+        (( $minutes > 0 )) && timer_show="${timer_show} ${minutes}m"
+        timer_show="${timer_show} ${seconds}s"
+
+        [[ $copy_time -gt 3 ]] && exit_code_and_command_time_bubble_error="%(?,%{%}$bubble_left%{$fg[green]%}[%?]:$timer_show $(bubblify 1 " " black green ),%{%}$bubble_left%{$fg[red]%}[%?]:$timer_show $(bubblify 1 " *" black red ))"
+
+
+        [[ $copy_time -lt 5 ]] && exit_code_and_command_time_bubble_error="%(?,%{%}$bubble_left%{$fg[green]%}[%?] $(bubblify 1 " " black green ) ,%{%}$bubble_left%{$fg[red]%}[%?] $(bubblify 1 " *" black red ))"
+
         unset timer
     fi
 }
@@ -173,5 +188,5 @@ _newline=$'\n'
 _lineup=$'\e[1A'
 _linedown=$'\e[1B'
 
-PROMPT='${_linedown}$filepath_bubble$(git_bubble)${_newline}$end_of_prompt'
+PROMPT='${_newline}$filepath_bubble$(git_bubble)${_newline}$end_of_prompt'
 RPROMPT='%{${_lineup}%}$exit_code_and_command_time_bubble_error %{${_linedown}%'
